@@ -245,6 +245,12 @@
     {
         [self requestNewReceipt];
     }
+    else if(_failureBlock)
+    {
+        NSError *error = [NSError errorWithDomain:SCPStoreKitDomain code:SCPErrorCodeCouldNotRefreshAppReceipt errorDescription:@"Not allowed to refresh receipt" errorFailureReason:@"User canceled refresh receipt request" errorRecoverySuggestion:@""];
+        _failureBlock(error);
+    }
+
 }
 
 @end
