@@ -130,7 +130,7 @@
 
 - (void)paymentQueue:(SKPaymentQueue *)queue restoreCompletedTransactionsFailedWithError:(NSError *)error {
     if (self.paymentTransactionStateFailedBlock)
-        self.paymentTransactionStateFailedBlock(error);
+        self.paymentTransactionStateFailedBlock(queue.transactions);
 }
 
 - (void)paymentQueueRestoreCompletedTransactionsFinished:(SKPaymentQueue *)queue {
