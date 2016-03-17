@@ -59,6 +59,7 @@ typedef NS_ENUM(NSInteger, SCPAppReceiptASN1TypeIAP)
     self.dateFormatter = [[NSDateFormatter alloc] init];
 	[_dateFormatter setDateFormat:@"yyyy-MM-dd'T'HH:mm:ssZ"];
 	[_dateFormatter setLocale:[[NSLocale alloc] initWithLocaleIdentifier:@"en_GB"]];
+    [_dateFormatter setTimeZone:[NSTimeZone timeZoneWithName:@"UTC"]];
 	
 	while (p < end)
 	{
