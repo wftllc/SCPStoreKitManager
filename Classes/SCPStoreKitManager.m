@@ -29,28 +29,28 @@
 
 + (id)sharedInstance
 {
-    static SCPStoreKitManager *sharedInstance = nil;
-	
-    static dispatch_once_t onceToken;
-	
-    dispatch_once(&onceToken, ^{
-        sharedInstance = [[self alloc] init];
-    });
-	
-    return sharedInstance;
+	static SCPStoreKitManager *sharedInstance = nil;
+
+	static dispatch_once_t onceToken;
+
+	dispatch_once(&onceToken, ^{
+		sharedInstance = [[self alloc] init];
+	});
+
+	return sharedInstance;
 }
 
 - (id)init
 {
 	self = [super init];
-	
+
 	if(self)
 	{
 		self.numberFormatter = [[NSNumberFormatter alloc] init];
-		
+
 		[_numberFormatter setNumberStyle:NSNumberFormatterCurrencyStyle];
 	}
-	
+
 	return self;
 }
 
@@ -59,12 +59,12 @@
 	self.productsReturnedSuccessfullyBlock = productsReturnedSuccessfullyBlock;
 	self.invalidProductsBlock = invalidProductsBlock;
 	self.failureBlock = failureBlock;
-	
+
 	SKProductsRequest *productsRequest = [[SKProductsRequest alloc] initWithProductIdentifiers:productsSet];
-	
+
 	[productsRequest setDelegate:self];
-	
-    [productsRequest start];
+
+	[productsRequest start];
 }
 
 - (void)productsRequest:(SKProductsRequest *)request didReceiveResponse:(SKProductsResponse *)response
@@ -72,10 +72,10 @@
 	if(_productsReturnedSuccessfullyBlock)
 	{
 		self.products = response.products;
-		
+
 		_productsReturnedSuccessfullyBlock(response.products);
 	}
-	
+
 	if([[response invalidProductIdentifiers] count] > 0 && _invalidProductsBlock)
 	{
 		_invalidProductsBlock([response invalidProductIdentifiers]);
@@ -88,10 +88,10 @@
 	self.paymentTransactionStatePurchasedBlock = paymentTransactionStatePurchasedBlock;
 	self.paymentTransactionStateFailedBlock = paymentTransactionStateFailedBlock;
 	self.paymentTransactionStateRestoredBlock = paymentTransactionStateRestoredBlock;
-    self.failureBlock = failureBlock;
-	
+	self.failureBlock = failureBlock;
+
 	SKPayment *payment = [SKPayment paymentWithProduct:product];
-	
+
 	if([SKPaymentQueue canMakePayments])
 	{
 		[[SKPaymentQueue defaultQueue] addTransactionObserver:self];
@@ -107,11 +107,11 @@
 }
 
 - (void)restorePurchasesPaymentTransactionStateRestored:(PaymentTransactionStateRestored)paymentTransactionStateRestoredBlock paymentTransactionStateFailed:(PaymentTransactionStateFailed)paymentTransactionStateFailedBlock failure:(Failure)failureBlock
-{	
+{
 	self.paymentTransactionStateFailedBlock = paymentTransactionStateFailedBlock;
 	self.paymentTransactionStateRestoredBlock = paymentTransactionStateRestoredBlock;
-    self.failureBlock = failureBlock;
-	
+	self.failureBlock = failureBlock;
+
 	if([SKPaymentQueue canMakePayments])
 	{
 		[[SKPaymentQueue defaultQueue] addTransactionObserver:self];
@@ -130,20 +130,20 @@
 
 - (void)paymentQueueRestoreCompletedTransactionsFinished:(SKPaymentQueue *)queue
 {
-    [self validateQueue:queue withTransactions:queue.transactions];
+	[self validateQueue:queue withTransactions:queue.transactions];
 }
 
 - (void)paymentQueue:(SKPaymentQueue *)queue updatedTransactions:(NSArray *)transactions
 {
-    [self validateQueue:queue withTransactions:transactions];
+	[self validateQueue:queue withTransactions:transactions];
 }
 
 - (void) validateQueue:(SKPaymentQueue *)queue withTransactions:(NSArray *)transactions
 {
-    if([transactions count] > 0)
+	if([transactions count] > 0)
 	{
 		[transactions enumerateObjectsUsingBlock:^(SKPaymentTransaction *transaction, NSUInteger idx, BOOL *stop) {
-			
+
 			switch([transaction transactionState])
 			{
 				case SKPaymentTransactionStatePurchased:
@@ -151,64 +151,61 @@
 				case SKPaymentTransactionStateRestored:
 				{
 					[queue finishTransaction:transaction];
-				   break;
+					break;
 				}
 				default:
 				{
 					break;
 				}
 			}
-			
+
 		}];
 	}
-	
+
 	if(_paymentTransactionStatePurchasingBlock)
 	{
 		NSArray *purchasingTransactions = [transactions filteredArrayUsingPredicate:[NSPredicate predicateWithFormat:@"transactionState == %i", SKPaymentTransactionStatePurchasing]];
-		
+
 		if([purchasingTransactions count] > 0)
 		{
 			_paymentTransactionStatePurchasingBlock(purchasingTransactions);
 		}
 	}
-	
+
 	if(_paymentTransactionStatePurchasedBlock)
 	{
 		NSArray *purchasedTransactions = [transactions filteredArrayUsingPredicate:[NSPredicate predicateWithFormat:@"transactionState == %i", SKPaymentTransactionStatePurchased]];
-		
+
 		if([purchasedTransactions count] > 0)
 		{
 			_paymentTransactionStatePurchasedBlock(purchasedTransactions);
 		}
 	}
-	
+
 	if(_paymentTransactionStateFailedBlock)
 	{
 		NSArray *failedTransactions = [transactions filteredArrayUsingPredicate:[NSPredicate predicateWithFormat:@"transactionState == %i", SKPaymentTransactionStateFailed]];
-		
+
 		if([failedTransactions count] > 0)
 		{
 			_paymentTransactionStateFailedBlock(failedTransactions);
 		}
 	}
-	
+
 	if(_paymentTransactionStateRestoredBlock)
 	{
 		NSArray *restoredTransactions = [transactions filteredArrayUsingPredicate:[NSPredicate predicateWithFormat:@"transactionState == %i", SKPaymentTransactionStateRestored]];
-		
-		if([restoredTransactions count] > 0)
-		{
-			_paymentTransactionStateRestoredBlock(restoredTransactions);
-		}
+
+		_paymentTransactionStateRestoredBlock(restoredTransactions);
 	}
 }
 
 - (void)paymentQueue:(SKPaymentQueue *)queue restoreCompletedTransactionsFailedWithError:(NSError *)error
 {
-    if(_failureBlock)
-    {
-        _failureBlock(error);
-    }
+	if(_failureBlock)
+	{
+		_failureBlock(error);
+	}
 }
 
 - (void)request:(SKRequest *)request didFailWithError:(NSError *)error
@@ -223,7 +220,7 @@
 {
 	[_numberFormatter setLocale:product.priceLocale];
 	NSString *formattedPrice = [_numberFormatter stringFromNumber:product.price];
-	
+
 	return formattedPrice;
 }
 
