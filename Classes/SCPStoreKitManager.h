@@ -14,6 +14,7 @@
 typedef void(^ProductsReturnedSuccessfully)(NSArray *products);
 typedef void(^InvalidProducts)(NSArray *invalidProducts);
 typedef void(^Failure)(NSError *error);
+typedef void(^SCPSuccess)(void);
 
 typedef void(^PaymentTransactionStatePurchasing)(NSArray *transactions);
 typedef void(^PaymentTransactionStateFailed)(NSArray *transactions);
@@ -26,11 +27,22 @@ typedef void(^PaymentTransactionStateRestored)(NSArray *transactions);
 
 + (id)sharedInstance;
 
-- (void)requestProductsWithIdentifiers:(NSSet *)productsSet productsReturnedSuccessfully:(ProductsReturnedSuccessfully)productsReturnedSuccessfullyBlock invalidProducts:(InvalidProducts)invalidProductsBlock failure:(Failure)failureBlock;
+- (void)requestProductsWithIdentifiers:(NSSet *)productsSet
+					productsReturnedSuccessfully:(ProductsReturnedSuccessfully)productsReturnedSuccessfullyBlock
+											 invalidProducts:(InvalidProducts)invalidProductsBlock
+															 failure:(Failure)failureBlock;
 
-- (void)requestPaymentForProduct:(SKProduct *)product paymentTransactionStatePurchasing:(PaymentTransactionStatePurchasing)paymentTransactionStatePurchasingBlock paymentTransactionStatePurchased:(PaymentTransactionStatePurchased)paymentTransactionStatePurchasedBlock paymentTransactionStateFailed:(PaymentTransactionStateFailed)paymentTransactionStateFailedBlock paymentTransactionStateRestored:(PaymentTransactionStateRestored)paymentTransactionStateRestoredBlock failure:(Failure)failureBlock;
+- (void)requestPaymentForProduct:(SKProduct *)product
+paymentTransactionStatePurchasing:(PaymentTransactionStatePurchasing)paymentTransactionStatePurchasingBlock
+paymentTransactionStatePurchased:(PaymentTransactionStatePurchased)paymentTransactionStatePurchasedBlock
+	 paymentTransactionStateFailed:(PaymentTransactionStateFailed)paymentTransactionStateFailedBlock
+ paymentTransactionStateRestored:(PaymentTransactionStateRestored)paymentTransactionStateRestoredBlock
+												 failure:(Failure)failureBlock;
 
-- (void)restorePurchasesPaymentTransactionStateRestored:(PaymentTransactionStateRestored)paymentTransactionStateRestoredBlock paymentTransactionStateFailed:(PaymentTransactionStateFailed)paymentTransactionStateFailedBlock failure:(Failure)failureBlock;
+- (void)restorePurchasesPaymentTransactionStateRestored:(PaymentTransactionStateRestored)paymentTransactionStateRestoredBlock
+													paymentTransactionStateFailed:(PaymentTransactionStateFailed)paymentTransactionStateFailedBlock
+																								success:(SCPSuccess)success
+																								failure:(Failure)failureBlock;
 
 - (NSString *)localizedPriceForProduct:(SKProduct *)product;
 

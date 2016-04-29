@@ -21,6 +21,8 @@
 @property (nonatomic, copy) PaymentTransactionStateFailed paymentTransactionStateFailedBlock;
 @property (nonatomic, copy) PaymentTransactionStateRestored paymentTransactionStateRestoredBlock;
 
+@property (nonatomic, copy) SCPSuccess restoreTransactionsSuccess;
+
 @property (nonatomic, strong, readwrite) NSArray *products;
 
 @end
@@ -47,14 +49,32 @@
 	if(self)
 	{
 		self.numberFormatter = [[NSNumberFormatter alloc] init];
-
 		[self.numberFormatter setNumberStyle:NSNumberFormatterCurrencyStyle];
 	}
 
 	return self;
 }
 
-- (void)requestProductsWithIdentifiers:(NSSet *)productsSet productsReturnedSuccessfully:(ProductsReturnedSuccessfully)productsReturnedSuccessfullyBlock invalidProducts:(InvalidProducts)invalidProductsBlock failure:(Failure)failureBlock
+#pragma mark - Cleanup
+
+-(void)cleanup
+{
+	self.invalidProductsBlock = nil;
+	self.productsReturnedSuccessfullyBlock = nil;
+	self.productsReturnedSuccessfullyBlock = nil;
+	self.paymentTransactionStatePurchasingBlock = nil;
+	self.paymentTransactionStatePurchasedBlock = nil;
+	self.paymentTransactionStateFailedBlock = nil;
+	self.paymentTransactionStateRestoredBlock = nil;
+	self.failureBlock = nil;
+}
+
+#pragma mark - SKProductsRequest
+
+- (void)requestProductsWithIdentifiers:(NSSet *)productsSet
+					productsReturnedSuccessfully:(ProductsReturnedSuccessfully)productsReturnedSuccessfullyBlock
+											 invalidProducts:(InvalidProducts)invalidProductsBlock
+															 failure:(Failure)failureBlock
 {
 	self.productsReturnedSuccessfullyBlock = productsReturnedSuccessfullyBlock;
 	self.invalidProductsBlock = invalidProductsBlock;
@@ -72,7 +92,6 @@
 	if(self.productsReturnedSuccessfullyBlock)
 	{
 		self.products = response.products;
-
 		self.productsReturnedSuccessfullyBlock(response.products);
 	}
 
@@ -80,9 +99,35 @@
 	{
 		self.invalidProductsBlock([response invalidProductIdentifiers]);
 	}
+	[self cleanupProductsRequest];
 }
 
-- (void)requestPaymentForProduct:(SKProduct *)product paymentTransactionStatePurchasing:(PaymentTransactionStatePurchasing)paymentTransactionStatePurchasingBlock paymentTransactionStatePurchased:(PaymentTransactionStatePurchased)paymentTransactionStatePurchasedBlock paymentTransactionStateFailed:(PaymentTransactionStateFailed)paymentTransactionStateFailedBlock paymentTransactionStateRestored:(PaymentTransactionStateRestored)paymentTransactionStateRestoredBlock failure:(Failure)failureBlock
+- (void)request:(SKRequest *)request didFailWithError:(NSError *)error
+{
+	if(self.failureBlock)
+	{
+		self.failureBlock(error);
+	}
+	[self cleanupProductsRequest];
+}
+
+-(void)cleanupProductsRequest {
+	self.failureBlock = nil;
+	self.invalidProductsBlock = nil;
+	self.productsReturnedSuccessfullyBlock = nil;
+}
+
+#pragma mark - SKPayment
+
+-(void)cleanupPaymentRequest {
+	self.paymentTransactionStatePurchasingBlock = nil;
+	self.paymentTransactionStatePurchasedBlock = nil;
+	self.paymentTransactionStateFailedBlock = nil;
+	self.paymentTransactionStateRestoredBlock = nil;
+	self.failureBlock = nil;
+}
+- (void)requestPaymentForProduct:(SKProduct *)product paymentTransactionStatePurchasing:(PaymentTransactionStatePurchasing)paymentTransactionStatePurchasingBlock paymentTransactionStatePurchased:(PaymentTransactionStatePurchased)paymentTransactionStatePurchasedBlock paymentTransactionStateFailed:(PaymentTransactionStateFailed)paymentTransactionStateFailedBlock paymentTransactionStateRestored:(PaymentTransactionStateRestored)paymentTransactionStateRestoredBlock
+												 failure:(Failure)failureBlock
 {
 	self.paymentTransactionStatePurchasingBlock = paymentTransactionStatePurchasingBlock;
 	self.paymentTransactionStatePurchasedBlock = paymentTransactionStatePurchasedBlock;
@@ -103,13 +148,27 @@
 		{
 			failureBlock([NSError errorWithDomain:SCPStoreKitDomain code:SCPErrorCodePaymentQueueCanNotMakePayments errorDescription:@"SKPaymentQueue can not make payments" errorFailureReason:@"Has the SKPaymentQueue got any uncompleted purchases?" errorRecoverySuggestion:@"Finish all transactions"]);
 		}
+		[self cleanupPaymentRequest];
 	}
 }
 
-- (void)restorePurchasesPaymentTransactionStateRestored:(PaymentTransactionStateRestored)paymentTransactionStateRestoredBlock paymentTransactionStateFailed:(PaymentTransactionStateFailed)paymentTransactionStateFailedBlock failure:(Failure)failureBlock
+#pragma mark - Restore Purchase
+
+-(void)cleanupRestorePurchases {
+	self.paymentTransactionStateFailedBlock = nil;
+	self.paymentTransactionStateRestoredBlock = nil;
+	self.restoreTransactionsSuccess = nil;
+	self.failureBlock = nil;
+
+}
+- (void)restorePurchasesPaymentTransactionStateRestored:(PaymentTransactionStateRestored)paymentTransactionStateRestoredBlock
+													paymentTransactionStateFailed:(PaymentTransactionStateFailed)paymentTransactionStateFailedBlock
+																								success:(SCPSuccess)success
+																								failure:(Failure)failureBlock
 {
 	self.paymentTransactionStateFailedBlock = paymentTransactionStateFailedBlock;
 	self.paymentTransactionStateRestoredBlock = paymentTransactionStateRestoredBlock;
+	self.restoreTransactionsSuccess = success;
 	self.failureBlock = failureBlock;
 
 	if([SKPaymentQueue canMakePayments])
@@ -123,22 +182,44 @@
 		{
 			failureBlock([NSError errorWithDomain:SCPStoreKitDomain code:SCPErrorCodePaymentQueueCanNotMakePayments errorDescription:@"SKPaymentQueue can not make payments" errorFailureReason:@"Has the SKPaymentQueue got any uncompleted purchases?" errorRecoverySuggestion:@"Finish all transactions"]);
 		}
+		[self cleanupRestorePurchases];
 	}
 }
 
+
 #pragma mark - SKPaymentTransactionObserver methods
 
-- (void)paymentQueueRestoreCompletedTransactionsFinished:(SKPaymentQueue *)queue
-{
-	NSLog(@"paymentQueueRestoreCompletedTransactionsFinished");
-	[self validateQueue:queue withTransactions:queue.transactions];
-}
+#pragma mark Updates
 
 - (void)paymentQueue:(SKPaymentQueue *)queue updatedTransactions:(NSArray *)transactions
 {
 	NSLog(@"paymentQueueUpdateTransactions");
 	[self validateQueue:queue withTransactions:transactions];
 }
+
+#pragma mark Restoring
+
+- (void)paymentQueueRestoreCompletedTransactionsFinished:(SKPaymentQueue *)queue
+{
+	NSLog(@"paymentQueueRestoreCompletedTransactionsFinished");
+	if( self.restoreTransactionsSuccess ) {
+		self.restoreTransactionsSuccess();
+	}
+	[self cleanupRestorePurchases];
+}
+
+- (void)paymentQueue:(SKPaymentQueue *)queue restoreCompletedTransactionsFailedWithError:(NSError *)error
+{
+	NSLog(@"restoreCompletedTransactionsFailedWithError: %@", error);
+	if(self.failureBlock)
+	{
+		self.failureBlock(error);
+	}
+	[self cleanupRestorePurchases];
+}
+
+
+#pragma mark - Queue helper
 
 - (void) validateQueue:(SKPaymentQueue *)queue withTransactions:(NSArray *)transactions
 {
@@ -204,22 +285,7 @@
 	}
 }
 
-- (void)paymentQueue:(SKPaymentQueue *)queue restoreCompletedTransactionsFailedWithError:(NSError *)error
-{
-	NSLog(@"restoreCompletedTransactionsFailedWithError: %@", error);
-	if(self.failureBlock)
-	{
-		self.failureBlock(error);
-	}
-}
-
-- (void)request:(SKRequest *)request didFailWithError:(NSError *)error
-{
-	if(self.failureBlock)
-	{
-		self.failureBlock(error);
-	}
-}
+#pragma mark - formatter
 
 - (NSString *)localizedPriceForProduct:(SKProduct *)product
 {
