@@ -107,11 +107,11 @@
 		[[SKPaymentQueue defaultQueue] addPayment:payment];
 	}
 	else {
-			NSError *error = [NSError errorWithDomain:SCPStoreKitDomain
-																					 code:SCPErrorCodePaymentQueueCanNotMakePayments
-															 errorDescription:@"SKPaymentQueue can not make payments"
-														 errorFailureReason:@"Has the SKPaymentQueue got any uncompleted purchases?"
-												errorRecoverySuggestion:@"Finish all transactions"];
+		NSError *error = [NSError errorWithDomain:SCPStoreKitDomain
+																				 code:SCPErrorCodePaymentQueueCanNotMakePayments
+														 errorDescription:@"SKPaymentQueue can not make payments"
+													 errorFailureReason:@"Has the SKPaymentQueue got any uncompleted purchases?"
+											errorRecoverySuggestion:@"Finish all transactions"];
 		[self.delegate requestPaymentForProduct:product
 										 didCompleteTransaction:nil
 																		success:NO
@@ -128,11 +128,11 @@
 		[[SKPaymentQueue defaultQueue] restoreCompletedTransactions];
 	}
 	else {
-			NSError *error = [NSError errorWithDomain:SCPStoreKitDomain
-																					 code:SCPErrorCodePaymentQueueCanNotMakePayments
-															 errorDescription:@"SKPaymentQueue can not make payments"
-														 errorFailureReason:@"Has the SKPaymentQueue got any uncompleted purchases?"
-												errorRecoverySuggestion:@"Finish all transactions"];
+		NSError *error = [NSError errorWithDomain:SCPStoreKitDomain
+																				 code:SCPErrorCodePaymentQueueCanNotMakePayments
+														 errorDescription:@"SKPaymentQueue can not make payments"
+													 errorFailureReason:@"Has the SKPaymentQueue got any uncompleted purchases?"
+											errorRecoverySuggestion:@"Finish all transactions"];
 	}
 }
 
@@ -143,7 +143,6 @@
 
 - (void)paymentQueue:(SKPaymentQueue *)queue updatedTransactions:(NSArray *)transactions
 {
-	NSLog(@"paymentQueueUpdateTransactions");
 	[self processQueue:queue transactions:transactions];
 }
 
@@ -151,13 +150,11 @@
 
 - (void)paymentQueueRestoreCompletedTransactionsFinished:(SKPaymentQueue *)queue
 {
-	NSLog(@"paymentQueueRestoreCompletedTransactionsFinished");
 	[self.delegate restoreTransactionsDidComplete:YES error:nil];
 }
 
 - (void)paymentQueue:(SKPaymentQueue *)queue restoreCompletedTransactionsFailedWithError:(NSError *)error
 {
-	NSLog(@"restoreCompletedTransactionsFailedWithError: %@", error);
 	[self.delegate restoreTransactionsDidComplete:NO error:error];
 }
 
@@ -176,11 +173,9 @@
 
 -(void)processQueue:(SKPaymentQueue *)queue transactions:(NSArray *)transactions
 {
-	NSLog(@"validateQueue with transactions: %@", transactions);
 	if([transactions count] > 0)
 	{
 		[transactions enumerateObjectsUsingBlock:^(SKPaymentTransaction *transaction, NSUInteger idx, BOOL *stop) {
-			NSLog(@"transaction: %@, %d, %@", transaction.payment.productIdentifier, transaction.transactionState, transaction.originalTransaction);
 
 			SKProduct *product = [self productForTransaction:transaction];
 			switch([transaction transactionState])
@@ -220,7 +215,7 @@
 {
 	[self.numberFormatter setLocale:product.priceLocale];
 	NSString *formattedPrice = [self.numberFormatter stringFromNumber:product.price];
-	
+
 	return formattedPrice;
 }
 
