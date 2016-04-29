@@ -48,7 +48,7 @@
 	{
 		self.numberFormatter = [[NSNumberFormatter alloc] init];
 
-		[_numberFormatter setNumberStyle:NSNumberFormatterCurrencyStyle];
+		[self.numberFormatter setNumberStyle:NSNumberFormatterCurrencyStyle];
 	}
 
 	return self;
@@ -69,16 +69,16 @@
 
 - (void)productsRequest:(SKProductsRequest *)request didReceiveResponse:(SKProductsResponse *)response
 {
-	if(_productsReturnedSuccessfullyBlock)
+	if(self.productsReturnedSuccessfullyBlock)
 	{
 		self.products = response.products;
 
-		_productsReturnedSuccessfullyBlock(response.products);
+		self.productsReturnedSuccessfullyBlock(response.products);
 	}
 
-	if([[response invalidProductIdentifiers] count] > 0 && _invalidProductsBlock)
+	if([[response invalidProductIdentifiers] count] > 0 && self.invalidProductsBlock)
 	{
-		_invalidProductsBlock([response invalidProductIdentifiers]);
+		self.invalidProductsBlock([response invalidProductIdentifiers]);
 	}
 }
 
@@ -130,19 +130,23 @@
 
 - (void)paymentQueueRestoreCompletedTransactionsFinished:(SKPaymentQueue *)queue
 {
+	NSLog(@"paymentQueueRestoreCompletedTransactionsFinished");
 	[self validateQueue:queue withTransactions:queue.transactions];
 }
 
 - (void)paymentQueue:(SKPaymentQueue *)queue updatedTransactions:(NSArray *)transactions
 {
+	NSLog(@"paymentQueueUpdateTransactions");
 	[self validateQueue:queue withTransactions:transactions];
 }
 
 - (void) validateQueue:(SKPaymentQueue *)queue withTransactions:(NSArray *)transactions
 {
+	NSLog(@"validateQueue with transactions: %@", transactions);
 	if([transactions count] > 0)
 	{
 		[transactions enumerateObjectsUsingBlock:^(SKPaymentTransaction *transaction, NSUInteger idx, BOOL *stop) {
+			NSLog(@"transaction: %@, %d, %@", transaction.payment.productIdentifier, transaction.transactionState, transaction.originalTransaction);
 
 			switch([transaction transactionState])
 			{
@@ -162,65 +166,66 @@
 		}];
 	}
 
-	if(_paymentTransactionStatePurchasingBlock)
+	if(self.paymentTransactionStatePurchasingBlock)
 	{
 		NSArray *purchasingTransactions = [transactions filteredArrayUsingPredicate:[NSPredicate predicateWithFormat:@"transactionState == %i", SKPaymentTransactionStatePurchasing]];
 
 		if([purchasingTransactions count] > 0)
 		{
-			_paymentTransactionStatePurchasingBlock(purchasingTransactions);
+			self.paymentTransactionStatePurchasingBlock(purchasingTransactions);
 		}
 	}
 
-	if(_paymentTransactionStatePurchasedBlock)
+	if(self.paymentTransactionStatePurchasedBlock)
 	{
 		NSArray *purchasedTransactions = [transactions filteredArrayUsingPredicate:[NSPredicate predicateWithFormat:@"transactionState == %i", SKPaymentTransactionStatePurchased]];
 
 		if([purchasedTransactions count] > 0)
 		{
-			_paymentTransactionStatePurchasedBlock(purchasedTransactions);
+			self.paymentTransactionStatePurchasedBlock(purchasedTransactions);
 		}
 	}
 
-	if(_paymentTransactionStateFailedBlock)
+	if(self.paymentTransactionStateFailedBlock)
 	{
 		NSArray *failedTransactions = [transactions filteredArrayUsingPredicate:[NSPredicate predicateWithFormat:@"transactionState == %i", SKPaymentTransactionStateFailed]];
 
 		if([failedTransactions count] > 0)
 		{
-			_paymentTransactionStateFailedBlock(failedTransactions);
+			self.paymentTransactionStateFailedBlock(failedTransactions);
 		}
 	}
 
-	if(_paymentTransactionStateRestoredBlock)
+	if(self.paymentTransactionStateRestoredBlock)
 	{
 		NSArray *restoredTransactions = [transactions filteredArrayUsingPredicate:[NSPredicate predicateWithFormat:@"transactionState == %i", SKPaymentTransactionStateRestored]];
 
-		_paymentTransactionStateRestoredBlock(restoredTransactions);
+		self.paymentTransactionStateRestoredBlock(restoredTransactions);
 	}
 }
 
 - (void)paymentQueue:(SKPaymentQueue *)queue restoreCompletedTransactionsFailedWithError:(NSError *)error
 {
-	if(_failureBlock)
+	NSLog(@"restoreCompletedTransactionsFailedWithError: %@", error);
+	if(self.failureBlock)
 	{
-		_failureBlock(error);
+		self.failureBlock(error);
 	}
 }
 
 - (void)request:(SKRequest *)request didFailWithError:(NSError *)error
 {
-	if(_failureBlock)
+	if(self.failureBlock)
 	{
-		_failureBlock(error);
+		self.failureBlock(error);
 	}
 }
 
 - (NSString *)localizedPriceForProduct:(SKProduct *)product
 {
-	[_numberFormatter setLocale:product.priceLocale];
-	NSString *formattedPrice = [_numberFormatter stringFromNumber:product.price];
-
+	[self.numberFormatter setLocale:product.priceLocale];
+	NSString *formattedPrice = [self.numberFormatter stringFromNumber:product.price];
+	
 	return formattedPrice;
 }
 
